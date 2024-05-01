@@ -8,15 +8,15 @@ import (
 
 // Task Types of this interface are handled by worker pool
 type Task interface {
-	Process()
+	Process(id int)
 }
 
 type IdTask struct {
 	id int
 }
 
-func (task *IdTask) Process() {
-	fmt.Printf("processing task with id %d\n", task.id)
+func (task *IdTask) Process(id int) {
+	fmt.Printf("thread {%d} is processing task with id {%d}\n", id, task.id)
 	time.Sleep(2 * time.Second)
 }
 
@@ -36,12 +36,12 @@ func NewWorkerPool(concurrency int) *WorkerPool {
 
 func (p *WorkerPool) Start() {
 	for i := 0; i < p.concurrency; i++ {
-		go func() {
+		go func(i int) {
 			defer p.wg.Done()
 			for task := range p.taskQueue {
-				task.Process()
+				task.Process(i)
 			}
-		}()
+		}(i)
 	}
 	p.wg.Add(p.concurrency)
 }
@@ -56,9 +56,9 @@ func (p *WorkerPool) Wait() {
 }
 
 func main() {
-	pool := NewWorkerPool(10)
+	pool := NewWorkerPool(3)
 	pool.Start()
-	for i := 1; i <= 30; i++ {
+	for i := 1; i <= 15; i++ {
 		task := &IdTask{i}
 		pool.Submit(task)
 	}
