@@ -7,67 +7,73 @@ import (
 )
 
 func main() {
-	one := make(chan int)
-	two := make(chan int)
-	three := make(chan int)
+	one := make(chan int, 1)
+	two := make(chan int, 1)
+	three := make(chan int, 1)
 
 	var wg sync.WaitGroup
 	wg.Add(3)
-	limit := 66
+
+	limit := 12
+	done := make(chan struct{})
 
 	go func(name string) {
 		defer wg.Done()
 		for {
-			num, ok := <-one
-			if !ok {
+			select {
+			case <-done:
+				println("Exiting", name)
 				return
+			case num := <-one:
+				if num > limit {
+					close(done)
+					return
+				}
+				fmt.Println(name, num)
+				time.Sleep(500 * time.Millisecond)
+				two <- num + 1
 			}
-			if num > limit {
-				close(two)
-				close(three)
-				return
-			}
-			println(name, num)
-			time.Sleep(500 * time.Millisecond) // Simulate some work
-			two <- num + 1
 		}
 	}("thread-1:")
 
 	go func(name string) {
 		defer wg.Done()
 		for {
-			num, ok := <-two
-			if !ok {
+			select {
+			case <-done:
+				println("Exiting", name)
 				return
+			case num := <-two:
+				if num > limit {
+					close(done)
+					return
+				}
+				fmt.Println(name, num)
+				time.Sleep(500 * time.Millisecond)
+				three <- num + 1
 			}
-			if num > limit {
-				close(three)
-				close(one)
-				return
-			}
-			println(name, num)
-			time.Sleep(500 * time.Millisecond) // Simulate some work
-			three <- num + 1
 		}
 	}("thread-2:")
 
 	go func(name string) {
 		defer wg.Done()
 		for {
-			num, ok := <-three
-			if !ok {
+			select {
+			case <-done:
+				println("Exiting", name)
 				return
+			case num := <-three:
+				if num > limit {
+					close(done)
+					return
+				}
+				fmt.Println(name, num)
+				time.Sleep(500 * time.Millisecond)
+				one <- num + 1
 			}
-			if num > limit {
-				close(one)
-				close(two)
-				return
-			}
-			println(name, num)
-			time.Sleep(500 * time.Millisecond) // Simulate some work
-			one <- num + 1
 		}
 	}("thread-3:")
+
 	one <- 1
 	wg.Wait()
 	fmt.Println("Done")
