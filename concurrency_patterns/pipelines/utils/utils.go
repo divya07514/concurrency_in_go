@@ -124,3 +124,68 @@ func isPrime(n int) bool {
 	}
 	return true
 }
+
+var Repeat = func(
+	done <-chan any,
+	values ...any,
+) <-chan any {
+	valueStream := make(chan any)
+	go func() {
+		defer close(valueStream)
+		for {
+			for _, v := range values {
+				select {
+				case <-done:
+					return
+				case valueStream <- v:
+				}
+			}
+		}
+	}()
+	return valueStream
+}
+
+var OrDone = func(done, c <-chan any) <-chan any {
+	valStream := make(chan any)
+	go func() {
+		defer close(valStream)
+		for {
+			select {
+			case <-done:
+				return
+			case v, ok := <-c:
+				if !ok {
+					return
+				}
+				select {
+				case valStream <- v:
+				case <-done:
+				}
+			}
+		}
+	}()
+	return valStream
+}
+
+var Tee = func(done <-chan any, in <-chan any) (<-chan any, <-chan any) {
+	out1 := make(chan any)
+	out2 := make(chan any)
+	go func() {
+		defer close(out1)
+		defer close(out2)
+		for v := range OrDone(done, in) {
+			var out1, out2 = out1, out2
+			for range 2 {
+				select {
+				case <-done:
+					return
+				case out1 <- v:
+					out1 = nil
+				case out2 <- v:
+					out2 = nil
+				}
+			}
+		}
+	}()
+	return out1, out2
+}
