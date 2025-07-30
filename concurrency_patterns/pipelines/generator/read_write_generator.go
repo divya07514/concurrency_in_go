@@ -77,11 +77,7 @@ func main() {
 	done := make(chan any)
 	readerChan, errs := reader(done, "/Users/divya.thakur/Desktop/nutanix/concurrency_in_go/concurrency_patterns/pipelines/generator/file.txt")
 
-	writerChan, err := writer(done, readerChan, errs)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	writerChan, _ := writer(done, readerChan, errs)
 	counter := 0
 	for line := range writerChan {
 		if counter == 10 {

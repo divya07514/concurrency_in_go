@@ -189,3 +189,29 @@ var Tee = func(done <-chan any, in <-chan any) (<-chan any, <-chan any) {
 	}()
 	return out1, out2
 }
+
+var Bridge = func(done <-chan any, chanStream <-chan <-chan any) <-chan any {
+	valStream := make(chan any)
+	go func() {
+		defer close(valStream)
+		for {
+			var stream <-chan any
+			select {
+			case <-done:
+				return
+			case maybeStream, ok := <-chanStream:
+				if !ok {
+					return
+				}
+				stream = maybeStream
+			}
+			for val := range OrDone(done, stream) {
+				select {
+				case <-done:
+				case valStream <- val:
+				}
+			}
+		}
+	}()
+	return valStream
+}
