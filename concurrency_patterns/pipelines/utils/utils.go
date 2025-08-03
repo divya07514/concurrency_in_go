@@ -211,7 +211,7 @@ var Bridge = func(done <-chan any, chanStream <-chan <-chan any) <-chan any {
 				case valStream <- val:
 				}
 			}
-		}
+		}	
 	}()
 	return valStream
 }
