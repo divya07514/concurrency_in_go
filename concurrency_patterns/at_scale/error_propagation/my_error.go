@@ -13,6 +13,7 @@ type MyError struct {
 }
 
 func WrapError(err error, messagef string, msgArgs ...any) MyError {
+
 	return MyError{
 		Inner:      err,
 		Message:    fmt.Sprintf(messagef, msgArgs...),

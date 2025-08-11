@@ -10,7 +10,7 @@ func main() {
 		chanStream := make(chan (<-chan any))
 		go func() {
 			defer close(chanStream)
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				stream := make(chan any, 1)
 				stream <- i
 				close(stream)
